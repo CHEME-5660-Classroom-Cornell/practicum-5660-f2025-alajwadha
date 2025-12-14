@@ -52,3 +52,19 @@ function log_growth_matrix(dataset::Dict{String, DataFrame},
     # return -
     return return_matrix;
 end
+
+"""
+    tanh_fast(x::Float64) -> Float64
+
+A fast approximation of the hyperbolic tangent function that bounds values to [-1, 1].
+This is used to bound preference scores in the portfolio allocation algorithm.
+
+### Arguments
+- `x::Float64`: Input value
+
+### Returns
+- `Float64`: Output bounded to [-1, 1]
+"""
+function tanh_fast(x::Float64)::Float64
+    return tanh(x);
+end
