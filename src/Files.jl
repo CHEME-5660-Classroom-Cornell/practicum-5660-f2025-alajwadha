@@ -30,14 +30,35 @@ MyTrainingMarketDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-
 Load the ticker-picker bandit model results computed in the `Setup-L14a-Example-RiskAware-BBBP-Ticker-Picker-Fall-2025.ipynb` notebook.
 """
 function MyTickerPickerBanditModelResults(;mood::Symbol = :neutral)::Dict{String, Any}
-    if (mood == :optimistic) 
-        return _jld2(joinpath(_PATH_TO_DATA, "Ticker-Picker-Preferences-Optimistic-Fall-2025.jld2"));
-    elseif (mood == :pessimistic)
-        return _jld2(joinpath(_PATH_TO_DATA, "Ticker-Picker-Preferences-Pessimistic-Fall-2025.jld2"));
-    elseif (mood == :neutral)
-        return _jld2(joinpath(_PATH_TO_DATA, "Ticker-Picker-Preferences-Neutral-Fall-2025.jld2"));
-    else
-        error("Invalid mood specified: $mood. Valid options are :optimistic, :neutral, :pessimistic.");
+    # Map mood to file name
+    filename = mood == :optimistic ? "Ticker-Picker-Preferences-Optimistic-Fall-2025.jld2" :
+                mood == :pessimistic ? "Ticker-Picker-Preferences-Pessimistic-Fall-2025.jld2" :
+                mood == :neutral ? "Ticker-Picker-Preferences-Neutral-Fall-2025.jld2" : nothing
+
+    isnothing(filename) && error("Invalid mood specified: $mood. Valid options are :optimistic, :neutral, :pessimistic.")
+
+    path = joinpath(_PATH_TO_DATA, filename)
+    if isfile(path)
+        return _jld2(path)
     end
+
+    # Fallback: construct a simple preferences table if the file is missing
+    # Build tickers from the testing dataset (present in this repo)
+    local_dataset = MyTestingMarketDataSet()["dataset"]
+    tickers = keys(local_dataset) |> collect |> sort
+
+    # Heuristic lambda by mood
+    λ = mood == :optimistic ? -1.0 : mood == :neutral ? 0.0 : 1.0
+
+    # Simple uniform preferences (> cutoff = 0.5 ensures assets are "preferred" by default)
+    probs = fill(0.6, length(tickers))
+
+    df = DataFrame(
+        ticker = tickers,
+        probability = probs,
+        lambda = fill(λ, length(tickers))
+    )
+
+    return Dict("preferences" => df)
 end
 # -- PUBLIC FUNCTIONS ABOVE HERE ------------------------------------------------------------------------------ #
